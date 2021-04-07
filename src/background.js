@@ -3,6 +3,9 @@
 import { app, protocol, BrowserWindow, ipcMain } from 'electron'
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
+const axios = require('axios');
+const qs = require('qs');
+
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
 // Scheme must be registered before the app is ready
@@ -19,7 +22,8 @@ async function createWindow() {
       
       // Use pluginOptions.nodeIntegration, leave this alone
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
-      nodeIntegration: process.env.ELECTRON_NODE_INTEGRATION
+      nodeIntegration: true,
+      contextIsolation: false,
     }
   })
 
@@ -61,11 +65,21 @@ app.on('ready', async () => {
       console.error('Vue Devtools failed to install:', e.toString())
     }
   }
-  ipcMain.on('authorization_code', (event, arg) => {
-    console.log(arg) // prints "ping"
-    event.returnValue = arg
-  })
+  
   createWindow()
+  ipcMain.on('authorization_code',(event, arg) => { // arg为接受到的消息
+    const headers = {
+      'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+    };
+    let data = JSON.parse(arg);
+    axios.post('http://10.10.4.135/oauth/token', qs.stringify(data), headers)
+    .then(function (response) {
+      console.log('==========================')
+      console.log(response.data)
+      event.sender.send('authorization-reply', JSON.stringify(response.data)); 
+    })
+  })
+  
 })
 
 // Exit cleanly on request from parent process in development mode.
