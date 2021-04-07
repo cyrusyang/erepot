@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+# erepot
+日志生成
+=======
 # ereport
 
 ## Project setup
@@ -22,3 +26,4 @@ yarn lint
 
 ### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).
+>>>>>>> 932e520... init
