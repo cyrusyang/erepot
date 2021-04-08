@@ -24,15 +24,32 @@
     <el-drawer
       :visible.sync="drawer"
       size='50%'
-      direction="rtl">
-      <el-timeline :reverse="reverse">
+      direction="rtl"
+      :with-header="false"
+      class="tl">
+      <el-collapse v-model="activeNames" v-for="(commit, index) in weekCommits" :key="commit.date">
+        <el-collapse-item :name="index">
+          <template slot="title">
+            <span class="date_title">{{commit.date}}</span>
+            <!-- <i class="header-icon el-icon-info"></i> -->
+          </template>
+          <ul v-for="(item, idx) in commit.commitMsg" :key="idx">
+            <li>{{idx+1}}. {{item.message}}</li>
+          </ul>
+          
+        </el-collapse-item>
+      </el-collapse>
+      <!-- <div v-for="(commit, index) in weekCommits" :key="index">
+        {{ index }} 
+      </div> -->
+      <!-- <el-timeline :reverse="reverse">
         <el-timeline-item
-          v-for="(commit, index) in projectCommits"
+          v-for="(commit, index) in weekCommits"
           :key="index"
-          :timestamp="commit.committed_date">
-          {{commit.message}}
+          :timestamp="commit.date">
+          {{commit.commitMsg}}
         </el-timeline-item>
-      </el-timeline>
+      </el-timeline> -->
     </el-drawer>
     <div>
       
@@ -51,16 +68,54 @@
           this.tableData = response.data;
         })
       },
+      monday(date){
+        var nowTime = date.getTime() ;
+        var day = date.getDay() || 7;//周一是每周的第一天
+        //var day = date.getDay() //周日是每周的第一天
+        var oneDayTime = 24*60*60*1000 ;
+
+        var Monday = nowTime - (day-1)*oneDayTime ;
+        var mondayTime=new Date(Monday);
+
+        var year=mondayTime.getFullYear();
+        var monMath=mondayTime.getMonth()+1;
+        var month=(monMath<10) ? "0"+""+monMath+"" : monMath;
+        var data=(mondayTime.getDate()<10) ? "0"+""+mondayTime.getDate()+"" : mondayTime.getDate();
+        var mondayDate=""+year+"-"+month+"-"+data+""
+        return mondayDate;
+      },
       clickTr(row){
         console.log(row)
-        let d = new Date();
-        let date = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
-        this.$axios.get(`${this.gitHost}/api/v4/projects/${row.id}/repository/commits?all=true&since=${date}&per_page=1000&order=topo`).then((response) => {
+        let d = this.monday(new Date());
+        this.weekCommits = [];
+        this.$axios.get(`${this.gitHost}/api/v4/projects/${row.id}/repository/commits?all=true&since=${d}&per_page=1000&order=topo`).then((response) => {
           let commits = response.data.filter(item=> item.committer_name == 'yangzh')
           console.log(commits)
-          this.projectCommits = commits
+          let groupCommits = this.groupBy(commits, (item)=> item.committed_date.substring(0,10) );
+          let commitMsg = [];
+          let keys = Object.keys(groupCommits);
+          for (let index = 0; index < keys.length; index++) {
+            const element = keys[index];
+            let dayCommits = groupCommits[element];
+            let msg = {
+              date: element,
+              commitMsg: dayCommits
+            }
+            commitMsg.push(msg);
+          }
+          this.weekCommits = commitMsg;
+          console.log(this.weekCommits)
           this.drawer = true;
         })
+      },
+      groupBy(list, fn){
+        let groups = [];
+        list.forEach(element => {
+          let group = fn(element);
+          groups[group] = groups[group] || [];
+          groups[group].push(element);
+        });
+        return groups;
       }
     },
     data() {
@@ -80,7 +135,8 @@
           timestamp: '2018-04-11'
         }],
         drawer: false,
-        projectCommits: [],
+        weekCommits: [],
+        activeNames: [0],
       }
     },
     mounted () {
@@ -99,6 +155,7 @@
 <style>
 .text {
   font-size: 14px;
+  font-weight: bolder;
 }
 
 .item {
@@ -107,5 +164,14 @@
 
 .box-card {
   width: 480px;
+}
+.tl{
+  text-align: left;
+}
+.date_title{
+  margin-left: 10px;
+}
+ul{
+  list-style: none;
 }
 </style>
