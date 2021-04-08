@@ -34,7 +34,7 @@
             <!-- <i class="header-icon el-icon-info"></i> -->
           </template>
           <ul v-for="(item, idx) in commit.commitMsg" :key="idx">
-            <li><i class="el-icon-close"></i>{{idx+1}}. {{item.message}}</li>
+            <li><i class="el-icon-close" @click="delCommit(index, idx)"></i>{{idx+1}}. {{item.message}}</li>
           </ul>
           
         </el-collapse-item>
@@ -116,7 +116,11 @@
           groups[group].push(element);
         });
         return groups;
-      }
+      },
+      delCommit(index, commitIndex){
+        this.weekCommits[index].commitMsg.splice(commitIndex,1)
+
+      },
     },
     data() {
       return {
