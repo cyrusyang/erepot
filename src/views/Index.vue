@@ -97,11 +97,23 @@
           for (let index = 0; index < keys.length; index++) {
             const element = keys[index];
             let dayCommits = groupCommits[element];
+            dayCommits.forEach(dcItem=> {
+              let itemMsg = dcItem.message;
+              let arr = itemMsg.split('(');
+              if(arr.length <2){
+                return dcItem;
+              }
+              let func = arr[0].trim().toLowerCase();
+              dcItem.func = func;
+              dcItem.message = arr[1].split(")")[0].trim(0);
+            })
+            dayCommits = dayCommits.filter(item=> ['added','changed','fixed'].includes(item.func));
             let msg = {
               date: element,
               commitMsg: dayCommits
             }
             commitMsg.push(msg);
+            console.log(commitMsg)
           }
           this.weekCommits = commitMsg;
           console.log(this.weekCommits)
