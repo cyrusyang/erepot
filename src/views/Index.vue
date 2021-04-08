@@ -27,14 +27,14 @@
       direction="rtl"
       :with-header="false"
       class="tl">
-      <el-collapse v-model="activeNames" v-for="(commit, index) in weekCommits" :key="commit.date">
+      <el-collapse id="drawDiv" v-model="activeNames" v-for="(commit, index) in weekCommits" :key="commit.date">
         <el-collapse-item :name="index">
           <template slot="title">
             <span class="date_title">{{commit.date}}</span>
             <!-- <i class="header-icon el-icon-info"></i> -->
           </template>
           <ul v-for="(item, idx) in commit.commitMsg" :key="idx">
-            <li>{{idx+1}}. {{item.message}}</li>
+            <li><i class="el-icon-close"></i>{{idx+1}}. {{item.message}}</li>
           </ul>
           
         </el-collapse-item>
@@ -153,6 +153,7 @@
 </script>
 
 <style>
+*{ margin:0; padding:0; }
 .text {
   font-size: 14px;
   font-weight: bolder;
@@ -173,5 +174,14 @@
 }
 ul{
   list-style: none;
+}
+ul li {
+  padding-left: 10px;
+}
+/* #drawDiv ul li:hover{
+  background: rgba(217, 224, 226, 0.933);
+} */
+i.el-icon-close{
+  cursor: pointer;
 }
 </style>
