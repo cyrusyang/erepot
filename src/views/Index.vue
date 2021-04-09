@@ -84,41 +84,73 @@
         var mondayDate=""+year+"-"+month+"-"+data+""
         return mondayDate;
       },
-      clickTr(row){
-        console.log(row)
+      getCommits(projectId, page){
+        let _this = this;
+        if(undefined === page){
+          page = 1;
+        }
         let d = this.monday(new Date());
-        this.weekCommits = [];
-        this.$axios.get(`${this.gitHost}/api/v4/projects/${row.id}/repository/commits?all=true&since=${d}&per_page=1000&order=topo`).then((response) => {
-          let commits = response.data.filter(item=> item.committer_name == 'yangzh')
-          console.log(commits)
-          let groupCommits = this.groupBy(commits, (item)=> item.committed_date.substring(0,10) );
-          let commitMsg = [];
-          let keys = Object.keys(groupCommits);
-          for (let index = 0; index < keys.length; index++) {
-            const element = keys[index];
-            let dayCommits = groupCommits[element];
-            dayCommits.forEach(dcItem=> {
-              let itemMsg = dcItem.message;
-              let arr = itemMsg.split('(');
-              if(arr.length <2){
-                return dcItem;
-              }
-              let func = arr[0].trim().toLowerCase();
-              dcItem.func = func;
-              dcItem.message = arr[1].split(")")[0].trim(0);
-            })
-            dayCommits = dayCommits.filter(item=> ['added','changed','fixed'].includes(item.func));
-            let msg = {
-              date: element,
-              commitMsg: dayCommits
+        return new Promise((resolve, reject) => {
+           _this.$axios.get(`${this.gitHost}/api/v4/projects/${projectId}/repository/commits?all=true&since=${d}&per_page=100&page=${page}`).then((response) => {
+            let headers = response.headers;
+            let nextPage = headers['x-next-page'];
+            let commits = response.data.filter(item=> item.committer_name == 'yangzh');
+            _this.projectCommits = _this.projectCommits.concat(commits);
+            if(!!headers['x-next-page']){
+              resolve(_this.getCommits(projectId, nextPage));
+            }else{
+              resolve(_this.projectCommits);
             }
-            commitMsg.push(msg);
-            console.log(commitMsg)
-          }
-          this.weekCommits = commitMsg;
-          console.log(this.weekCommits)
-          this.drawer = true;
+          })
         })
+      },
+      async clickTr(row){
+        let _this = this;
+        _this.weekCommits = [];
+        _this.projectCommits = [];
+        await _this.getCommits(row.id);
+        _this.dealCommits(_this.projectCommits);
+          _this.drawer = true;
+        
+      },
+      dealCommits(commitResutls){
+        let commits = commitResutls.filter(item=> item.committer_name == 'yangzh');
+        console.log(commits)
+        // 提交记录每天分组
+        let groupCommits = this.groupBy(commits, (item)=> item.committed_date.substring(0,10) );
+        let commitMsg = [];
+        let keys = Object.keys(groupCommits);
+        for (let index = 0; index < keys.length; index++) {
+          const element = keys[index];
+          let dayCommits = groupCommits[element];
+          dayCommits.forEach(dcItem=> {
+            let itemMsg = dcItem.message;
+            let arr = itemMsg.split('(');
+            if(arr.length <2){
+              return dcItem;
+            }
+            let func = arr[0].trim().toLowerCase();
+            dcItem.func = func;
+            dcItem.message = arr[1].split(")")[0].trim(0);
+          })
+          dayCommits = dayCommits.filter(item=> this.funcs.includes(item.func));
+          let msg = {
+            date: element,
+            commitMsg: dayCommits
+          }
+          commitMsg.push(msg);
+        }
+        commitMsg.sort((a, b)=>{
+          return a.date.localeCompare(b.date);
+        })
+        //=============
+        commits = commits.filter(item=> this.funcs.includes(item.func));
+        commitMsg.push({
+          date: 'week',
+          commitMsg: commits,
+        });
+        this.weekCommits = commitMsg;
+        console.log(this.weekCommits);
       },
       groupBy(list, fn){
         let groups = [];
@@ -153,6 +185,8 @@
         drawer: false,
         weekCommits: [],
         activeNames: [0],
+        projectCommits: [],
+        funcs: ['added','changed','fixed']
       }
     },
     mounted () {
@@ -199,5 +233,16 @@ ul li {
 } */
 i.el-icon-close{
   cursor: pointer;
+}
+
+/*1.显示滚动条：当内容超出容器的时候，可以拖动：*/
+.el-drawer__body {
+  overflow: auto;
+  /* overflow-x: auto; */
+}
+ 
+/*2.隐藏滚动条，太丑了*/
+.el-drawer__container ::-webkit-scrollbar{
+  display: none;
 }
 </style>
