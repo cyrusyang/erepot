@@ -115,6 +115,17 @@
       },
       dealCommits(commitResutls){
         let commits = commitResutls.filter(item=> item.committer_name == 'yangzh');
+        commits.forEach(item=> {
+          let itemMsg = item.message;
+          let arr = itemMsg.split('(');
+          if(arr.length <2){
+            return item;
+          }
+          let func = arr[0].trim().toLowerCase();
+          item.func = func;
+          item.message = arr[1].split(")")[0].trim(0);
+        })
+        commits = commits.filter(item=> this.funcs.includes(item.func));
         console.log(commits)
         // 提交记录每天分组
         let groupCommits = this.groupBy(commits, (item)=> item.committed_date.substring(0,10) );
@@ -123,17 +134,6 @@
         for (let index = 0; index < keys.length; index++) {
           const element = keys[index];
           let dayCommits = groupCommits[element];
-          dayCommits.forEach(dcItem=> {
-            let itemMsg = dcItem.message;
-            let arr = itemMsg.split('(');
-            if(arr.length <2){
-              return dcItem;
-            }
-            let func = arr[0].trim().toLowerCase();
-            dcItem.func = func;
-            dcItem.message = arr[1].split(")")[0].trim(0);
-          })
-          dayCommits = dayCommits.filter(item=> this.funcs.includes(item.func));
           let msg = {
             date: element,
             commitMsg: dayCommits
@@ -144,7 +144,6 @@
           return a.date.localeCompare(b.date);
         })
         //=============
-        commits = commits.filter(item=> this.funcs.includes(item.func));
         commitMsg.push({
           date: 'week',
           commitMsg: commits,
